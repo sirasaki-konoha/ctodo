@@ -18,6 +18,10 @@ TodoJson load_todos()
     return td;
 }
 
+int add_todo() {
+
+}
+
 void draw_todos(TodoJson* td, int selected)
 {
     int right_margin = COLS - 2;
@@ -62,6 +66,8 @@ int main_loop()
             selected--;
         if ((ch == KEY_DOWN || ch == 'j') && selected < td.len - 1)
             selected++;
+        if (ch == 'a')
+          add_todo();
     }
 
     free_todo(&td);
