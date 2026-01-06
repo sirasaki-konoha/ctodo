@@ -1,0 +1,7 @@
+include_rules
+
+
+: foreach src/*.c |> !cc |>
+: .obj/*.o |> gcc $(CFLAGS) %f -o %o |> tup-out/ctodo
+
+

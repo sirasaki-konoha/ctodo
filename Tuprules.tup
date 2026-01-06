@@ -1,0 +1,4 @@
+CFLAGS += -Wall -Wextra -std=c99 -O2 -march=native -fsanitize=address -g -lncurses
+INCLUDE_PATH += include/
+
+!cc = |> gcc $(CFLAGS) -I$(INCLUDE_PATH) -c %f -o %o |> .obj/%B.o
