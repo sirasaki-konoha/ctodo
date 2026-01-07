@@ -7,7 +7,7 @@ Requires ncurses-lib and [tup](https://gittup.org/tup)
 
 ```sh
 tup init
-tup build
+tup
 ```
 
 
