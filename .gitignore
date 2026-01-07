@@ -1,4 +1,5 @@
 compile_commands.json
 tup-out
+.tup
 .obj
 .cache

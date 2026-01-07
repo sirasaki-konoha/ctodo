@@ -51,6 +51,23 @@ Todos new_todo(const char* title, const char* created_at, int done)
     return td;
 }
 
+int remove_todo(TodoJson* td, int index) {
+    if (index < 0 || index >= td->len) {
+        return -1;
+    }
+
+    free((char*)td->todo[index].title);
+    free((char*)td->todo[index].created_at);
+
+    for (int i = index; i < td->len - 1; i++) {
+        td->todo[i] = td->todo[i + 1];
+    }
+
+    td->len -= 1;
+
+    return 0;
+}
+
 int todo_push(TodoJson* td, Todos t)
 {
     if (td->len >= 500)

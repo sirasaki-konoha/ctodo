@@ -6,15 +6,31 @@
 
 #include "kutil.h"
 
-Writer wopen(const char* path)
+Writer w_open(const char* path)
 {
     FILE* fp = fopen(path, "r+");
+    if (!fp) {
+        perror("fopen");
+        exit(EXIT_FAILURE);
+    }
 
     Writer wt = { .context = format_string(""), .fp = fp };
     return wt;
 }
 
-int add_string(Writer* wt, const char* str)
+Writer w_create(const char* path) {
+    FILE* fp = fopen(path, "w+");
+
+    if (!fp) {
+        perror("fopen");
+        exit(EXIT_FAILURE);
+    }
+
+    Writer wt = { .context = format_string(""), .fp = fp };
+    return wt;
+}
+
+int w_add_string(Writer* wt, const char* str)
 {
     char* old = safe_strdup(wt->context);
     if (old == NULL) {
@@ -30,13 +46,13 @@ int add_string(Writer* wt, const char* str)
     return 0;
 }
 
-void flush_write(Writer* wt)
+void w_flush_write(Writer* wt)
 {
     fputs(wt->context, wt->fp);
     return;
 }
 
-void free_writer(Writer* wt)
+void w_free_writer(Writer* wt)
 {
     free(wt->context);
     fclose(wt->fp);
