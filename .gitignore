@@ -3,3 +3,5 @@ tup-out
 .tup
 .obj
 .cache
+zig-out
+.zig-cache
