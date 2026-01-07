@@ -28,6 +28,7 @@ TodoJson parse_todo(const char* todo_content)
         td.len += 1;
         td.todo[i].title = title ? safe_strdup(title) : NULL;
         td.todo[i].created_at = created_at ? safe_strdup(created_at) : NULL;
+        td.todo[i].id = json_object_get_number(arrobj, "id");
         td.todo[i].done = json_object_get_boolean(arrobj, "done");
     }
 

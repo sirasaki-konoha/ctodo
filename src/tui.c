@@ -19,21 +19,29 @@
 
 
 int add_todo(TodoJson* td) {
-    char* input = get_input("Title: ");
-    char* time = get_time();
+    char* input = get_input("Title");
+    if (strcmp(input, "") == 0) {
+        free(input);
+        return 0;
+    }
+
+    char* time_str = get_time();
 
 
-    Todos todo = new_todo(input, time, 0);
+    srand(time(NULL));
+
+    Todos todo = new_todo(input, time_str, 0, rand());
     todo_push(td, todo);
 
-    char* generated = create_json(*td);
+    TodoJson fmt_td = format_todos(*td);
+    char* generated = create_json(fmt_td);
 
     Writer wt = w_create("test/todo.json");
     w_add_string(&wt, generated);
     w_flush_write(&wt);
 
     w_free_writer(&wt);
-    free(time);
+    free(time_str);
     free(generated);
     free(input);
 
@@ -45,7 +53,8 @@ void delete_todo(TodoJson* td, int selected) {
         return;
     }
 
-    char* generated = create_json(*td);
+    TodoJson fmt_td = format_todos(*td);
+    char* generated = create_json(fmt_td);
 
     Writer wt = w_create("test/todo.json");
     w_add_string(&wt, generated);
@@ -56,28 +65,57 @@ void delete_todo(TodoJson* td, int selected) {
     free(generated);
 }
 
-void draw_todos(TodoJson* td, int selected)
+void mark_done(TodoJson* td, int selected) {
+    td->todo[selected].done = !td->todo[selected].done;
+
+    TodoJson fmt_td = format_todos(*td);
+    char* generated = create_json(fmt_td);
+
+    Writer wt = w_create("test/todo.json");
+    w_add_string(&wt, generated);
+    w_flush_write(&wt);
+
+
+    w_free_writer(&wt);
+    free(generated);
+}
+
+void draw_todos(TodoJson* raw, int selected)
 {
+    TodoJson td = format_todos(*raw);
     int right_margin = COLS - 2;
+    int row = 5;
 
-    for (int i = 0; i < td->len; i++) {
-        if (i == selected)
-            attron(A_REVERSE);
 
-        mvprintw(i + 5, 0, "[%c] %s", td->todo[i].done ? 'x' : ' ',
-            td->todo[i].title);
 
-        const char* date = td->todo[i].created_at;
+    for (int i = 0; i < td.len; i++) {
+            if (i == selected)
+                attron(A_REVERSE);
+
+        if (td.todo[i].done) {
+            mvprintw(row, 0, "[");
+            attron(COLOR_PAIR(2));
+            mvprintw(row, 1, "X");
+            attroff(COLOR_PAIR(2));
+            mvprintw(row, 2, "]");
+
+            mvprintw(row, 4, "%s", td.todo[i].title);
+        } else {
+            mvprintw(row, 0, "[ ] %s", td.todo[i].title);
+        }
+
+        const char* date = td.todo[i].created_at;
         int x = right_margin - strlen(date);
         if (x < 0)
             x = 0;
 
-        mvprintw(i + 5, x, "(%s)", date);
+        mvprintw(row, x, "(%s)", date);
 
         if (i == selected)
             attroff(A_REVERSE);
-    }
+        row++;
 
+    }
 }
 
 void draw_ui(TodoJson* td, int selected) {
@@ -101,7 +139,7 @@ int main_loop()
 
     while (1) {
         clear();
-
+        td = format_todos(td);
         draw_ui(&td, selected);
         draw_msg(msg);
         refresh();
@@ -116,8 +154,7 @@ int main_loop()
         if (ch == 'a')
           add_todo(&td);
         if (ch == 'd') {
-            char* input = get_input("delete todo? ");
-            if (strcmp(input, "y") == 0 || strcmp(input, "yes") == 0) {
+            if (dialog_confirm("Delete todo?")) {
                 delete_todo(&td, selected);
                 if (selected >= td.len && td.len > 0) {
                     selected = td.len - 1;
@@ -126,9 +163,9 @@ int main_loop()
                 free(msg);
                 msg = safe_strdup("Delete canceled.");
             }
-
-            free(input);
         }
+        if (ch == ' ')
+            mark_done(&td, selected);
 
     }
 
@@ -144,6 +181,7 @@ int enter_todos_tui()
 
 
     initscr();
+    curs_set(0);
     noecho();
     cbreak();
     start_color();
@@ -151,6 +189,7 @@ int enter_todos_tui()
     keypad(stdscr, TRUE);
 
     init_pair(1, COLOR_MAGENTA, -1);
+    init_pair(2, COLOR_GREEN, -1);
     init_pair(4, COLOR_CYAN, -1);
 
     main_loop();

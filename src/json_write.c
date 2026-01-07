@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "json_read.h"
 #include "kutil.h"
@@ -31,6 +32,7 @@ char* create_json(TodoJson td)
 
         json_object_set_string(obj_arr, "title", td.todo[i].title);
         json_object_set_string(obj_arr, "created_at", td.todo[i].created_at);
+        json_object_set_number(obj_arr, "id", td.todo[i].id);
         json_object_set_boolean(obj_arr, "done", td.todo[i].done);
     }
 
@@ -40,9 +42,10 @@ char* create_json(TodoJson td)
     return json;
 }
 
-Todos new_todo(const char* title, const char* created_at, int done)
+Todos new_todo(const char* title, const char* created_at, int done, int id)
 {
     Todos td = {
+        .id = id,
         .title = safe_strdup(title),
         .created_at = safe_strdup(created_at),
         .done = done,
@@ -68,11 +71,32 @@ int remove_todo(TodoJson* td, int index) {
     return 0;
 }
 
+
+TodoJson format_todos(TodoJson td) {
+    TodoJson fmt_td = { .len = 0 };
+
+
+    for (int i = 0; i < td.len; i++) {
+        if (!td.todo[i].done) {
+            todo_push(&fmt_td, td.todo[i]);
+        }
+    }
+
+    for (int i = 0; i < td.len; i++) {
+        if (td.todo[i].done) {
+            todo_push(&fmt_td, td.todo[i]);
+        }
+    }
+
+    return fmt_td;
+}
+
 int todo_push(TodoJson* td, Todos t)
 {
     if (td->len >= 500)
         return -1;
-    td->todo[td->len++] = t;
+    td->todo[td->len] = t;
+    td->len++;
     return 0;
 }
 

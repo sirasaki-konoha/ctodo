@@ -2,6 +2,7 @@
 #define _INTERNAL_JSON_READ
 
 typedef struct Todos {
+    int id;
     char* title;
     char* created_at;
     int done;

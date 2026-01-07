@@ -42,3 +42,36 @@ char* dialog_input(const char* prompt) {
 
 }
 
+
+int dialog_confirm(const char* message) {
+    int width = strlen(message) + 10;
+    int height = 5;
+
+    int starty = (LINES - height) / 2;
+    int startx = (COLS - width) / 2;
+
+    WINDOW* win = newwin(height, width, starty, startx);
+    draw_dialog_box(win);
+
+    mvwprintw(win, 1, 2, "%s", message);
+    mvwprintw(win, 2, 2, "[y] Yes   [n] No");
+
+    wrefresh(win);
+
+    int ch;
+    while (1) {
+        ch = getch();
+
+        if (ch == 'y' || ch == 'Y') {
+            delwin(win);
+            return 1;
+        } else {
+            delwin(win);
+            return 0;
+        }
+    }
+
+}
+
+
+
