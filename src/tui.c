@@ -15,6 +15,7 @@
 #include "read.h"
 #include "write.h"
 #include "utils.h"
+#include "meta.h"
 
 
 
@@ -80,54 +81,59 @@ void mark_done(TodoJson* td, int selected) {
     free(generated);
 }
 
-void draw_todos(TodoJson* raw, int selected)
+void draw_todos(TodoJson* raw, int selected, int scroll)
 {
     TodoJson td = format_todos(*raw);
     int right_margin = COLS - 2;
-    int row = 5;
+    int list_top = 5;
+    int list_height = LINES - list_top - 1;
 
+    for (int row = 0; row < list_height; row++) {
+        int idx = scroll + row;
+        if (idx >= td.len)
+            break;
 
+        if (idx == selected)
+            attron(A_REVERSE);
 
-    for (int i = 0; i < td.len; i++) {
-            if (i == selected)
-                attron(A_REVERSE);
-
-        if (td.todo[i].done) {
-            mvprintw(row, 0, "[");
+        if (td.todo[idx].done) {
+            mvprintw(list_top + row, 0, "[");
             attron(COLOR_PAIR(2));
-            mvprintw(row, 1, "X");
+            mvprintw(list_top + row, 1, "X");
             attroff(COLOR_PAIR(2));
-            mvprintw(row, 2, "]");
+            mvprintw(list_top + row, 2, "]");
 
-            mvprintw(row, 4, "%s", td.todo[i].title);
+            mvprintw(list_top + row, 4, "%s", td.todo[idx].title);
         } else {
-            mvprintw(row, 0, "[ ] %s", td.todo[i].title);
+            mvprintw(list_top + row, 0, "[ ] %s", td.todo[idx].title);
         }
 
-        const char* date = td.todo[i].created_at;
+        const char* date = td.todo[idx].created_at;
         int x = right_margin - strlen(date);
         if (x < 0)
             x = 0;
 
-        mvprintw(row, x, "(%s)", date);
+        mvprintw(list_top + row, x, "(%s)", date);
 
-        if (i == selected)
+        if (idx == selected)
             attroff(A_REVERSE);
-        row++;
-
     }
 }
 
-void draw_ui(TodoJson* td, int selected) {
-    mvprintw(0, 0, "add:  a  delete: d  quit: q");
-    mvprintw(1, 0, "down: j  up:  k");
-    draw_todos(td, selected);
+void draw_ui(TodoJson* td, int selected, int scroll) {
+    mvprintw(0, 0, "Press 'h' to help");
+    draw_todos(td, selected, scroll);
+    mvprintw(LINES - 1, 0,
+             "ctodo %s | built %s %s",
+             VERSION,
+             __DATE__,
+             __TIME__);
 
 }
 
 void draw_msg(const char* msg) {
     attron(COLOR_PAIR(1));
-    mvprintw(3, 0, "%s", msg);
+    mvprintw(1, 0, "%s", msg);
     attroff(COLOR_PAIR(1));
 }
 
@@ -137,20 +143,36 @@ int main_loop()
     TodoJson td = load_todos();
     char* msg = format_string("");
 
+    int scroll = 0;
+    int list_top = 5;
+    int list_height = LINES - list_top - 1;
+
     while (1) {
         clear();
         td = format_todos(td);
-        draw_ui(&td, selected);
+        draw_ui(&td, selected, scroll);
         draw_msg(msg);
         refresh();
 
         int ch = getch();
         if (ch == 'q')
             break;
-        if ((ch == KEY_UP || ch == 'k') && selected >= 1)
-            selected--;
-        if ((ch == KEY_DOWN || ch == 'j') && selected < td.len - 1)
-            selected++;
+        if ((ch == KEY_UP || ch == 'k') && selected >= 1) {
+            if (selected > 0) {
+                selected--;
+                if (selected < scroll)
+                    scroll--;
+            }
+        }
+        if ((ch == KEY_DOWN || ch == 'j') && selected < td.len - 1){
+            if (selected < td.len - 1) {
+                selected++;
+                if (selected >= scroll + list_height) {
+                    scroll++;
+                }
+            }
+
+        }
         if (ch == 'a')
           add_todo(&td);
         if (ch == 'd') {

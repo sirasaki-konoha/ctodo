@@ -8,6 +8,9 @@
 #include "read.h"
 #include "tui.h"
 #include "write.h"
+#include "meta.h"
+
+
 
 void display_todo()
 {
@@ -19,29 +22,55 @@ void display_todo()
 
 int main(int argc, char* argv[])
 {
-    struct arg_str* arg_todo = arg_str0("n", "todo", "TODO", "todo");
+    struct arg_str* arg_todo = arg_str0("t", "todo", "TODO", "add specified todo");
+    struct arg_lit* version = arg_lit0("v", "version", "display ctodo's version");
+    struct arg_lit* help = arg_lit0("h", "help", "show help");
     struct arg_end* end = arg_end(10);
-    void* argtable[] = { arg_todo, end };
+    void* argtable[] = { arg_todo, version, help, end };
 
     int nerrors = arg_parse(argc, argv, argtable);
     if (nerrors > 0) {
         arg_print_errors(stderr, end, argv[0]);
         printf("\n");
         arg_print_syntax(stdout, argtable, "\n");
-        arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
 
-        return 1;
+        goto cleanup;
+    }
+
+    if (help->count > 0) {
+        printf("Usage: ctodo");
+        arg_print_syntax(stdout, argtable, "\n");
+        printf("\nOptions\n");
+        arg_print_glossary(stdout, argtable, "    %-25s %s\n");
+        goto cleanup;
+    }
+
+    if (version->count > 0) {
+        printf(
+            "ctodo version %s\n"
+            "Compiled at %s %s\n"
+            "Licensed under MIT Licese. \n"
+            "Source code available on https://github.com/sirasaki-konoha/ctodo\n",
+            VERSION,
+            __DATE__,
+            __TIME__
+        );
+        goto cleanup;
     }
 
     if (!(arg_todo->count > 0)) {
-        arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
         display_todo();
-        return 0;
+        goto cleanup;
     }
 
-    arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
+    goto cleanup;
+
+cleanup:
+    arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[2]));
     return 0;
+
 }
+
 
 // int main() {
 //     char* content = read_file("test/todo.json");
