@@ -7,7 +7,6 @@ char* dialog_input(const char* prompt);
 int dialog_confirm(const char* message);
 #define get_input(prompt) dialog_input(prompt)
 
-
 WINDOW* create_header();
 WINDOW* create_todo_list_win();
 WINDOW* create_selected_win();

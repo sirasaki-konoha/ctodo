@@ -7,23 +7,24 @@
 #include "kutil.h"
 #include "tui_draw.h"
 
-
 #define HEADER_H 3
 #define FOOTER_H 3
 
-void draw_dialog_box(WINDOW* win) {
+void draw_dialog_box(WINDOW* win)
+{
     wattron(win, COLOR_PAIR(4));
     box(win, 0, 0);
     wattroff(win, COLOR_PAIR(4));
 }
 
-char* dialog_input(const char* prompt) {
+char* dialog_input(const char* prompt)
+{
     int width = 40;
     int height = 5;
 
     WINDOW* win = newwin(height, width,
-                  (LINES - height) / 2,
-                  (COLS - width) / 2);
+        (LINES - height) / 2,
+        (COLS - width) / 2);
 
     draw_dialog_box(win);
     mvwprintw(win, 1, 2, "%s", prompt);
@@ -40,11 +41,10 @@ char* dialog_input(const char* prompt) {
 
     delwin(win);
     return safe_strdup(buf);
-
 }
 
-
-int dialog_confirm(const char* message) {
+int dialog_confirm(const char* message)
+{
     timeout(-1);
     int width = strlen(message) + 10;
     int height = 5;
@@ -72,11 +72,10 @@ int dialog_confirm(const char* message) {
             return 0;
         }
     }
-
 }
 
-
-WINDOW* create_header() {
+WINDOW* create_header()
+{
     int height = HEADER_H;
     int width = COLS;
 
@@ -88,7 +87,8 @@ WINDOW* create_header() {
     return win;
 }
 
-WINDOW* create_todo_list_win() {
+WINDOW* create_todo_list_win()
+{
     int height = LINES - HEADER_H - FOOTER_H;
     int width = (COLS / 2) - 1;
 
@@ -100,20 +100,21 @@ WINDOW* create_todo_list_win() {
     return win;
 }
 
-WINDOW* create_selected_win() {
+WINDOW* create_selected_win()
+{
     int height = LINES - HEADER_H - FOOTER_H;
     int width = COLS / 2;
 
     int starty = HEADER_H;
     int startx = COLS / 2;
 
-
     WINDOW* win = newwin(height, width, starty, startx);
 
     return win;
 }
 
-WINDOW* create_footer(){
+WINDOW* create_footer()
+{
     int screen_h, screen_w;
     getmaxyx(stdscr, screen_h, screen_w);
 
@@ -125,6 +126,4 @@ WINDOW* create_footer(){
     WINDOW* win = newwin(FOOTER_H, screen_w, footer_y, 0);
 
     return win;
-
 }
-

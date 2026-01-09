@@ -1,23 +1,22 @@
 #include <curses.h>
+#include <form.h>
 #include <locale.h>
 #include <ncurses.h>
-#include <form.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include "tui.h"
-#include "tui_draw.h"
 #include "json_read.h"
 #include "json_write.h"
 #include "kutil.h"
-#include "write.h"
-#include "utils.h"
 #include "meta.h"
+#include "tui.h"
+#include "tui_draw.h"
+#include "utils.h"
+#include "write.h"
 
-
-
-int add_todo(TodoJson* td) {
+int add_todo(TodoJson* td)
+{
     char* input = get_input("Title");
     if (strcmp(input, "") == 0) {
         free(input);
@@ -25,7 +24,6 @@ int add_todo(TodoJson* td) {
     }
 
     char* time_str = get_time();
-
 
     srand(time(NULL));
 
@@ -47,7 +45,8 @@ int add_todo(TodoJson* td) {
     return 0;
 }
 
-void delete_todo(TodoJson* td, int selected) {
+void delete_todo(TodoJson* td, int selected)
+{
     if (remove_todo(td, selected) != 0) {
         return;
     }
@@ -59,12 +58,12 @@ void delete_todo(TodoJson* td, int selected) {
     w_add_string(&wt, generated);
     w_flush_write(&wt);
 
-
     w_free_writer(&wt);
     free(generated);
 }
 
-void mark_done(TodoJson* td, int selected) {
+void mark_done(TodoJson* td, int selected)
+{
     td->todo[selected].done = !td->todo[selected].done;
 
     TodoJson fmt_td = format_todos(*td);
@@ -73,7 +72,6 @@ void mark_done(TodoJson* td, int selected) {
     Writer wt = w_create("test/todo.json");
     w_add_string(&wt, generated);
     w_flush_write(&wt);
-
 
     w_free_writer(&wt);
     free(generated);
@@ -114,28 +112,32 @@ void draw_todo_list(WINDOW* win, TodoJson* raw, int selected, int scroll)
     wrefresh(win);
 }
 
-void draw_footer(WINDOW* win) {
+void draw_footer(WINDOW* win)
+{
     mvwprintw(win, 1, 0,
-             "ctodo %s | built %s %s",
-             VERSION,
-             __DATE__,
-             __TIME__);
+        "ctodo %s | built %s %s",
+        VERSION,
+        __DATE__,
+        __TIME__);
     draw_dialog_box(win);
 }
 
-void draw_header(WINDOW* win) {
+void draw_header(WINDOW* win)
+{
     mvwprintw(win, 1, 1, "Press 'h' to help");
     draw_dialog_box(win);
     wrefresh(win);
 }
 
-void draw_msg(const char* msg) {
+void draw_msg(const char* msg)
+{
     attron(COLOR_PAIR(1));
     mvprintw(1, 0, "%s", msg);
     attroff(COLOR_PAIR(1));
 }
 
-void draw_detail(WINDOW* detail_win, TodoJson td, int selected) {
+void draw_detail(WINDOW* detail_win, TodoJson td, int selected)
+{
     mvwprintw(detail_win, 1, 1, "%s", td.todo[selected].title);
     mvwprintw(detail_win, 3, 1, "Created at %s, id: %d", td.todo[selected].created_at, td.todo[selected].id);
     if (td.todo[selected].done) {
@@ -149,7 +151,8 @@ void draw_detail(WINDOW* detail_win, TodoJson td, int selected) {
     wrefresh(detail_win);
 }
 
-void check_xy() {
+void check_xy()
+{
 
     if (LINES <= 40 || COLS <= 40) {
         char* format = format_string("Window width or height is too small! (current: width: %d height: %d;  expected: width: 30 height: 30)", COLS, LINES);
@@ -176,7 +179,6 @@ int main_loop()
     while (1) {
         td = format_todos(td);
         check_xy();
-
 
         werase(detail);
         werase(todo_list);
@@ -208,14 +210,13 @@ int main_loop()
                         scroll--;
                 }
             }
-            if ((ch == KEY_DOWN || ch == 'j') && selected < td.len - 1){
+            if ((ch == KEY_DOWN || ch == 'j') && selected < td.len - 1) {
                 if (selected < td.len - 1) {
                     selected++;
                     if (selected >= scroll + list_height) {
                         scroll++;
                     }
                 }
-
             }
             if (ch == 'a') {
                 add_todo(&td);
@@ -232,7 +233,6 @@ int main_loop()
                 mark_done(&td, selected);
             }
         }
-
     }
 
     free_todo(&td);
@@ -244,7 +244,6 @@ int enter_todos_tui()
 {
 
     setlocale(LC_ALL, "");
-
 
     initscr();
     curs_set(0);

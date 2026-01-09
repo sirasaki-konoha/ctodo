@@ -5,12 +5,10 @@
 #include "argtable3.h"
 #include "json_read.h"
 #include "json_write.h"
+#include "meta.h"
 #include "read.h"
 #include "tui.h"
 #include "write.h"
-#include "meta.h"
-
-
 
 void display_todo()
 {
@@ -53,8 +51,7 @@ int main(int argc, char* argv[])
             "Source code available on https://github.com/sirasaki-konoha/ctodo\n",
             VERSION,
             __DATE__,
-            __TIME__
-        );
+            __TIME__);
         goto cleanup;
     }
 
@@ -68,9 +65,7 @@ int main(int argc, char* argv[])
 cleanup:
     arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[2]));
     return 0;
-
 }
-
 
 // int main() {
 //     char* content = read_file("test/todo.json");

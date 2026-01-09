@@ -1,12 +1,13 @@
-#include <time.h>
 #include <stdlib.h>
+#include <time.h>
 
-#include "utils.h"
-#include "kutil.h"
 #include "json_read.h"
+#include "kutil.h"
 #include "read.h"
+#include "utils.h"
 
-char* get_time() {
+char* get_time()
+{
     time_t now = time(NULL);
     struct tm* tm = localtime(&now);
 
@@ -15,14 +16,12 @@ char* get_time() {
     int day = tm->tm_mday;
 
     char* time = format_string("%d-%d-%d",
-                               year,
-                               month,
-                               day);
+        year,
+        month,
+        day);
 
     return time;
 }
-
-
 
 TodoJson load_todos()
 {

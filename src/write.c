@@ -18,7 +18,8 @@ Writer w_open(const char* path)
     return wt;
 }
 
-Writer w_create(const char* path) {
+Writer w_create(const char* path)
+{
     FILE* fp = fopen(path, "w+");
 
     if (!fp) {

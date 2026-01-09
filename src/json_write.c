@@ -54,7 +54,8 @@ Todos new_todo(const char* title, const char* created_at, int done, int id)
     return td;
 }
 
-int remove_todo(TodoJson* td, int index) {
+int remove_todo(TodoJson* td, int index)
+{
     if (index < 0 || index >= td->len) {
         return -1;
     }
@@ -71,10 +72,9 @@ int remove_todo(TodoJson* td, int index) {
     return 0;
 }
 
-
-TodoJson format_todos(TodoJson td) {
+TodoJson format_todos(TodoJson td)
+{
     TodoJson fmt_td = { .len = 0 };
-
 
     for (int i = 0; i < td.len; i++) {
         if (!td.todo[i].done) {
