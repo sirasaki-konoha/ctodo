@@ -8,6 +8,9 @@ on:
   # 手動実行も可能
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   mirror:
     runs-on: ubuntu-latest
@@ -17,6 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Install Fossil
         run: |
@@ -25,7 +29,6 @@ jobs:
       
       - name: Clone Fossil repository
         run: |
-          # Fossilリポジトリをクローン
           fossil clone https://fossil.konoha.rest/ctodo ctodo.fossil
           
           # 作業ディレクトリを作成
@@ -33,15 +36,28 @@ jobs:
           cd fossil-checkout
           fossil open ../ctodo.fossil
           
+          # 特定のブランチをチェックアウト（必要な場合）
+          # fossil update trunk
+          # fossil update branch-name
+      
       - name: Export Fossil to Git
         run: |
           cd fossil-checkout
           
-          # Fossilの全ファイルをコピー
-          rsync -av --exclude='.fslckout' --exclude='.fossil-settings' ./ ../
+          # Fossilの全ファイルをルートにコピー（fossil-checkoutディレクトリを除外）
+          rsync -av --exclude='.fslckout' --exclude='.fossil-settings' ./ ../temp-export/
           
-          # .fossil-settingsは含める場合
-          # rsync -av --exclude='.fslckout' ./ ../
+          # ルートディレクトリに戻る
+          cd ..
+          
+          # 既存のファイルを削除（.gitと.githubは保持）
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '.github' ! -name 'fossil-checkout' ! -name 'ctodo.fossil' ! -name 'temp-export' -exec rm -rf {} +
+          
+          # エクスポートしたファイルを移動
+          rsync -av temp-export/ ./
+          
+          # 一時ディレクトリを削除
+          rm -rf temp-export fossil-checkout ctodo.fossil
       
       - name: Configure Git
         run: |
