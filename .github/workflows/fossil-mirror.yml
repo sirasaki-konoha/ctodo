@@ -24,12 +24,9 @@ jobs:
           sudo apt-get install -y fossil
       
       - name: Clone Fossil repository
-        env:
-          FOSSIL_USER: ${{ secrets.FOSSIL_USER }}
-          FOSSIL_PASSWORD: ${{ secrets.FOSSIL_PASSWORD }}
         run: |
           # Fossilリポジトリをクローン
-          fossil clone https://${FOSSIL_USER}:${FOSSIL_PASSWORD}@fossil.konoha.rest/ctodo ctodo.fossil
+          fossil clone https://fossil.konoha.rest/ctodo ctodo.fossil
           
           # 作業ディレクトリを作成
           mkdir fossil-checkout
