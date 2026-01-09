@@ -1,0 +1,63 @@
+name: Mirror from Fossil
+
+on:
+  schedule:
+    # 毎時0分に実行（UTC）
+    - cron: '0 * * * *'
+  
+  # 手動実行も可能
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout GitHub repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install Fossil
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fossil
+      
+      - name: Clone Fossil repository
+        env:
+          FOSSIL_USER: ${{ secrets.FOSSIL_USER }}
+          FOSSIL_PASSWORD: ${{ secrets.FOSSIL_PASSWORD }}
+        run: |
+          # Fossilリポジトリをクローン
+          fossil clone https://${FOSSIL_USER}:${FOSSIL_PASSWORD}@fossil.konoha.rest/ctodo ctodo.fossil
+          
+          # 作業ディレクトリを作成
+          mkdir fossil-checkout
+          cd fossil-checkout
+          fossil open ../ctodo.fossil
+          
+      - name: Export Fossil to Git
+        run: |
+          cd fossil-checkout
+          
+          # Fossilの全ファイルをコピー
+          rsync -av --exclude='.fslckout' --exclude='.fossil-settings' ./ ../
+          
+          # .fossil-settingsは含める場合
+          # rsync -av --exclude='.fslckout' ./ ../
+      
+      - name: Configure Git
+        run: |
+          git config user.name "Fossil Mirror Bot"
+          git config user.email "bot@github-actions"
+      
+      - name: Commit and Push to GitHub
+        run: |
+          # 変更があるか確認
+          if [[ -n $(git status --porcelain) ]]; then
+            git add .
+            git commit -m "Mirror from Fossil ($(date '+%Y-%m-%d %H:%M:%S'))"
+            git push
+          else
+            echo "No changes to commit"
+          fi

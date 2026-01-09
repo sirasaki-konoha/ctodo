@@ -3,12 +3,13 @@
 #include <form.h>
 #include <ncurses.h>
 #include <string.h>
-#include <stdlib.h>
 
 #include "kutil.h"
-#include "write.h"
 #include "tui_draw.h"
 
+
+#define HEADER_H 3
+#define FOOTER_H 3
 
 void draw_dialog_box(WINDOW* win) {
     wattron(win, COLOR_PAIR(4));
@@ -44,6 +45,7 @@ char* dialog_input(const char* prompt) {
 
 
 int dialog_confirm(const char* message) {
+    timeout(-1);
     int width = strlen(message) + 10;
     int height = 5;
 
@@ -74,4 +76,55 @@ int dialog_confirm(const char* message) {
 }
 
 
+WINDOW* create_header() {
+    int height = HEADER_H;
+    int width = COLS;
+
+    int starty = 0;
+    int startx = 0;
+
+    WINDOW* win = newwin(height, width, starty, startx);
+
+    return win;
+}
+
+WINDOW* create_todo_list_win() {
+    int height = LINES - HEADER_H - FOOTER_H;
+    int width = (COLS / 2) - 1;
+
+    int starty = HEADER_H;
+    int startx = (COLS / 2) / (COLS / 2);
+
+    WINDOW* win = newwin(height, width, starty, startx);
+
+    return win;
+}
+
+WINDOW* create_selected_win() {
+    int height = LINES - HEADER_H - FOOTER_H;
+    int width = COLS / 2;
+
+    int starty = HEADER_H;
+    int startx = COLS / 2;
+
+
+    WINDOW* win = newwin(height, width, starty, startx);
+
+    return win;
+}
+
+WINDOW* create_footer(){
+    int screen_h, screen_w;
+    getmaxyx(stdscr, screen_h, screen_w);
+
+    int header_y = 0;
+    int content_y = HEADER_H;
+    int content_h = screen_h - HEADER_H - FOOTER_H;
+    int footer_y = HEADER_H + content_h;
+
+    WINDOW* win = newwin(FOOTER_H, screen_w, footer_y, 0);
+
+    return win;
+
+}
 

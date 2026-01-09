@@ -20,7 +20,7 @@ pub fn build(b: *std.Build) void {
     }
 
 
-    exe.root_module.linkSystemLibrary("ncurses", .{});
+    exe.root_module.linkSystemLibrary("ncursesw", .{});
 
     var dir = std.fs.cwd().openDir("./src/", .{ .iterate = true }) catch {
         std.process.exit(1);
@@ -33,6 +33,7 @@ pub fn build(b: *std.Build) void {
         const file = std.fmt.allocPrint(allocator, "src/{s}", .{ entry.name }) catch std.process.exit(1);
         exe.addCSourceFile(.{
             .file = b.path(file),
+            .flags = &.{ "-Wno-date-time" },
         });
 
         allocator.free(file);

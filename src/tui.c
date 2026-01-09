@@ -2,7 +2,6 @@
 #include <locale.h>
 #include <ncurses.h>
 #include <form.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -12,7 +11,6 @@
 #include "json_read.h"
 #include "json_write.h"
 #include "kutil.h"
-#include "read.h"
 #include "write.h"
 #include "utils.h"
 #include "meta.h"
@@ -81,12 +79,11 @@ void mark_done(TodoJson* td, int selected) {
     free(generated);
 }
 
-void draw_todos(TodoJson* raw, int selected, int scroll)
+void draw_todo_list(WINDOW* win, TodoJson* raw, int selected, int scroll)
 {
     TodoJson td = format_todos(*raw);
-    int right_margin = COLS - 2;
-    int list_top = 5;
-    int list_height = LINES - list_top - 1;
+    int list_height = getmaxy(win);
+    int list_top = 1;
 
     for (int row = 0; row < list_height; row++) {
         int idx = scroll + row;
@@ -94,41 +91,42 @@ void draw_todos(TodoJson* raw, int selected, int scroll)
             break;
 
         if (idx == selected)
-            attron(A_REVERSE);
+            wattron(win, A_REVERSE);
 
         if (td.todo[idx].done) {
-            mvprintw(list_top + row, 0, "[");
-            attron(COLOR_PAIR(2));
-            mvprintw(list_top + row, 1, "X");
-            attroff(COLOR_PAIR(2));
-            mvprintw(list_top + row, 2, "]");
+            mvwprintw(win, list_top + row, 1, "[");
+            wattron(win, COLOR_PAIR(2));
+            mvwprintw(win, list_top + row, 2, "X");
+            wattroff(win, COLOR_PAIR(2));
+            mvwprintw(win, list_top + row, 3, "]");
 
-            mvprintw(list_top + row, 4, "%s", td.todo[idx].title);
+            mvwprintw(win, list_top + row, 5, "%s", td.todo[idx].title);
         } else {
-            mvprintw(list_top + row, 0, "[ ] %s", td.todo[idx].title);
+            mvwprintw(win, list_top + row, 1, "[ ] %s", td.todo[idx].title);
         }
 
-        const char* date = td.todo[idx].created_at;
-        int x = right_margin - strlen(date);
-        if (x < 0)
-            x = 0;
-
-        mvprintw(list_top + row, x, "(%s)", date);
-
         if (idx == selected)
-            attroff(A_REVERSE);
+            wattroff(win, A_REVERSE);
     }
+
+    draw_dialog_box(win);
+
+    wrefresh(win);
 }
 
-void draw_ui(TodoJson* td, int selected, int scroll) {
-    mvprintw(0, 0, "Press 'h' to help");
-    draw_todos(td, selected, scroll);
-    mvprintw(LINES - 1, 0,
+void draw_footer(WINDOW* win) {
+    mvwprintw(win, 1, 0,
              "ctodo %s | built %s %s",
              VERSION,
              __DATE__,
              __TIME__);
+    draw_dialog_box(win);
+}
 
+void draw_header(WINDOW* win) {
+    mvwprintw(win, 1, 1, "Press 'h' to help");
+    draw_dialog_box(win);
+    wrefresh(win);
 }
 
 void draw_msg(const char* msg) {
@@ -137,57 +135,103 @@ void draw_msg(const char* msg) {
     attroff(COLOR_PAIR(1));
 }
 
+void draw_detail(WINDOW* detail_win, TodoJson td, int selected) {
+    mvwprintw(detail_win, 1, 1, "%s", td.todo[selected].title);
+    mvwprintw(detail_win, 3, 1, "Created at %s, id: %d", td.todo[selected].created_at, td.todo[selected].id);
+    if (td.todo[selected].done) {
+        mvwprintw(detail_win, 5, 1, "Marked as ");
+        wattron(detail_win, COLOR_PAIR(2));
+        mvwprintw(detail_win, 5, 11, "DONE");
+        wattroff(detail_win, COLOR_PAIR(2));
+    }
+
+    draw_dialog_box(detail_win);
+    wrefresh(detail_win);
+}
+
+void check_xy() {
+
+    if (LINES <= 40 || COLS <= 40) {
+        char* format = format_string("Window width or height is too small! (current: width: %d height: %d;  expected: width: 30 height: 30)", COLS, LINES);
+        dialog_confirm(format);
+        free(format);
+    }
+}
+
 int main_loop()
 {
     int selected = 0;
     TodoJson td = load_todos();
     char* msg = format_string("");
 
+    WINDOW* detail = create_selected_win();
+    WINDOW* todo_list = create_todo_list_win();
+    WINDOW* header = create_header();
+    WINDOW* footer = create_footer();
+
     int scroll = 0;
     int list_top = 5;
     int list_height = LINES - list_top - 1;
 
     while (1) {
-        clear();
         td = format_todos(td);
-        draw_ui(&td, selected, scroll);
+        check_xy();
+
+
+        werase(detail);
+        werase(todo_list);
+        werase(header);
+        werase(footer);
+
+        draw_header(header);
+        draw_detail(detail, td, selected);
+        draw_todo_list(todo_list, &td, selected, scroll);
+        draw_footer(footer);
         draw_msg(msg);
+
+        wrefresh(header);
+        wrefresh(detail);
+        wrefresh(todo_list);
+        wrefresh(footer);
         refresh();
 
         int ch = getch();
-        if (ch == 'q')
-            break;
-        if ((ch == KEY_UP || ch == 'k') && selected >= 1) {
-            if (selected > 0) {
-                selected--;
-                if (selected < scroll)
-                    scroll--;
-            }
-        }
-        if ((ch == KEY_DOWN || ch == 'j') && selected < td.len - 1){
-            if (selected < td.len - 1) {
-                selected++;
-                if (selected >= scroll + list_height) {
-                    scroll++;
-                }
-            }
+        timeout(100);
 
-        }
-        if (ch == 'a')
-          add_todo(&td);
-        if (ch == 'd') {
-            if (dialog_confirm("Delete todo?")) {
-                delete_todo(&td, selected);
-                if (selected >= td.len && td.len > 0) {
-                    selected = td.len - 1;
+        if (ch != ERR) {
+            if (ch == 'q')
+                break;
+            if ((ch == KEY_UP || ch == 'k') && selected >= 1) {
+                if (selected > 0) {
+                    selected--;
+                    if (selected < scroll)
+                        scroll--;
                 }
-            } else {
-                free(msg);
-                msg = safe_strdup("Delete canceled.");
+            }
+            if ((ch == KEY_DOWN || ch == 'j') && selected < td.len - 1){
+                if (selected < td.len - 1) {
+                    selected++;
+                    if (selected >= scroll + list_height) {
+                        scroll++;
+                    }
+                }
+
+            }
+            if (ch == 'a') {
+                add_todo(&td);
+            }
+            if (ch == 'd') {
+                if (dialog_confirm("Delete todo?")) {
+                    delete_todo(&td, selected);
+                    if (selected >= td.len && td.len > 0) {
+                        selected = td.len - 1;
+                    }
+                }
+            }
+            if (ch == ' ') {
+                mark_done(&td, selected);
             }
         }
-        if (ch == ' ')
-            mark_done(&td, selected);
 
     }
 
@@ -209,6 +253,7 @@ int enter_todos_tui()
     start_color();
     use_default_colors();
     keypad(stdscr, TRUE);
+    nodelay(stdscr, TRUE);
 
     init_pair(1, COLOR_MAGENTA, -1);
     init_pair(2, COLOR_GREEN, -1);
